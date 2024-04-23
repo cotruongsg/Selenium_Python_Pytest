@@ -1,0 +1,38 @@
+Refer : https://medium.com/@iamfaisalkhatri/parallel-execution-of-tests-using-selenium-grid-4-with-docker-compose-2dc243f4fe8b
+        https://nitinbhardwaj6.medium.com/selenium-grid-with-docker-c8ecb0d8404
+
+1. Step 1 
+
+Create docker-compose.yml file with full browsers infomation
+
+2. Step 2
+
+docker-compose -f docker-compose-v3-seleniumgrid.yml up
+
+*Once the grid is up and running, we can navigate to http://localhost:4444 and checkout the instances which are up and running as per the configurations we gave in the docker compose file.
+
+3. Step 3
+
+*if we want to scale up the chrome services and have 3 more instances up and running, we can do this by stopping the current docker compose session and spinning up again using the below command
+
+docker-compose -f docker-compose-v3.yml up --scale chrome=4
+
+We can see there are total 4 chrome services instances up and running and each service has 4 instances of Chrome Browser, 
+so in total we have 16 chrome browsers up and running and we can take leverage and run 16 parallel chrome sessions using this now!
+
+*To Stop and remove containers, networks, volumes, and images created by docker compose up we can use the following command:
+
+docker compose -f docker-compose-v3.yml down
+
+4. Step 4 
+
+Set web_driver = webdriver.Remote(command_executor=selenium_hub_url, options=options) in conftest.py file
+
+5. Run parallel with cross browsers
+
+pytest -v -n 16
+
+6. Run allure to open results
+
+allure serve allure-results
+

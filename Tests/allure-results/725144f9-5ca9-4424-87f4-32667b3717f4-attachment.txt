@@ -1,0 +1,4 @@
+0px
+-100px
+-100
+Image shifted to the left by -100 pixels

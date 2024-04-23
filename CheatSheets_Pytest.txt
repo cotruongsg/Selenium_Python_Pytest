@@ -1,0 +1,272 @@
+I. Running Tests with Pytest -K Options 
+refer : https://pytest-with-eric.com/introduction/pytest-k-options/#Running-Tests-with-Pytest-K-Options
+
+1. Specifying a Substring:
+pytest -v -k checkout
+
+2. Using Python Expressions:
+This command will run all the tests containing the keyword cart but exclude those containing the keyword core.
+pytest -v -k 'cart and not core'
+
+It will run all the tests containing the keyword cart but exclude the test containing the keywords core, logout, and pin.
+pytest -v -k "cart and not core and not logout and not pin"
+
+3. Other Options to Filter Tests
+
+You can easily exclude unnecessary tests by applying markers like @pytest.mark.skip or @pytest.mark.xfail
+@pytest.mark.skip(reason="No need to test core function. SKIPPED!")
+def test_cart_management_core():
+    assert True
+
+@pytest.mark.xfail(reason="Intentionally declaring the test as fail. Shows Xpass if it passes")
+def test_cart_item_list():
+    assert True
+
+4. Run Test by Node
+pytest -v tests/test_cart_access.py::test_cart_core_authentication
+
+5. pytest.ini
+[pytest]
+addopts = 
+    -k core
+
+[pytest]
+addopts = 
+    -k "core and not (test_api or test_ui)"
+
+II. Pytest Markers (refer: https://pytest-with-eric.com/pytest-best-practices/pytest-markers/)
+
+Pytest markers are a powerful feature that allows you to add metadata or labels to your test functions, making it easier to organize and customize your test suite.
+Markers help you categorize and select specific tests to run, especially when dealing with large test suites.
+
+1. Markers
+import pytest
+
+@pytest.mark.smoke
+def test_homepage_loads():
+    # Test to check if the homepage loads quickly
+    assert ...
+
+@pytest.mark.regression
+def test_login_successful():
+    # Test to check if the login process works as expected
+    assert ...
+
+@pytest.mark.regression
+def test_user_profile_update():
+    # Test to check if user profile updates are saved correctly
+    assert ...
+
+pytest -m smoke    # Run only smoke tests
+pytest -m regression    # Run only regression tests
+
+2. Common Built-In Markers
+- Pytest Skip Test / Skip If
+
+import pytest
+import sys
+
+# A test that will always be skipped.
+@pytest.mark.skip(reason="This test is temporarily disabled.")
+def test_example_skip():
+    assert 2 + 2 == 4
+
+
+# A test that will be skipped if it's run on a Python version earlier than 3.8.
+@pytest.mark.skipif(sys.version_info < (3, 8), reason="Requires Python 3.8 or later.")
+def test_example_skipif():
+    assert 3 * 3 == 9
+
+- Pytest Expected Failure (Xfail)
+# A test that's expected to fail.
+@pytest.mark.xfail(reason="Expected to fail until we fix the bug.")
+def test_example_xfail():
+    assert 2 * 3 == 7
+
+- Pytest Parameterization
+@pytest.mark.parametrize("arg1, arg2, ...", [(val1, val2, ...), ...]) 
+
+# Test function demonstrating the parametrize feature.
+# It will run 3 times with different inputs.
+@pytest.mark.parametrize("test_input,expected", [(1, 3), (3, 5), (5, 7)])
+def test_addition(test_input, expected):
+    assert test_input + 2 == expected
+
+- Pytest Fixtures
+
+import pytest
+
+# A fixture returning a sample database entry.
+@pytest.fixture
+def database_data():
+    return {"username": "Alice", "password": "password123"}
+
+# Test function using the database_data fixture.
+def test_database_entry(database_data):
+    assert database_data["username"] == "Alice"
+    assert database_data["password"] == "password123"
+
+- Pytest Timeout
+@pytest.mark.timeout(seconds)
+
+Specifies a maximum execution time for a test. If the test runs longer than the specified timeout, it’s automatically marked as a failure. 
+This is useful for preventing tests from running indefinitely.
+
+import pytest
+import time
+
+# A Slow Running Test that's expected to timeout.
+@pytest.mark.timeout(10)
+def test_timeout():
+    time.sleep(15)
+    assert 2 * 3 == 6
+
+- Pytest Run Order
+Need a plugin to work : pip install pytest-order
+
+import pytest
+
+@pytest.mark.order(2)
+def test_foo():
+    assert True
+
+@pytest.mark.order(1)
+def test_bar():
+    assert True
+
+- Combining Multiple Markers
+import pytest
+
+@pytest.mark.marker1
+@pytest.mark.marker2
+def test_combined_markers():
+    assert 1 + 1 == 2
+
+pytest -m marker1 -m marker2 tests/test_combined.py -v -s
+
+- Grouping Tests
+import pytest
+
+# Define custom markers
+pytestmark = [
+    pytest.mark.login,
+    pytest.mark.signup
+]
+
+# First test for login functionality
+@pytest.mark.login
+def test_login_valid_user():
+    username = "valid_user"
+    password = "valid_pass"
+    assert username == "valid_user" and password == "valid_pass"
+
+# Second test for login functionality
+@pytest.mark.login
+def test_login_invalid_user():
+    username = "invalid_user"
+    password = "valid_pass"
+    assert username != "valid_user" and password == "valid_pass"
+
+# First test for signup functionality
+@pytest.mark.signup
+def test_signup_new_user():
+    new_username = "new_user"
+    new_password = "new_pass"
+    assert new_username == "new_user" and new_password == "new_pass"
+
+# Second test for signup functionality
+@pytest.mark.signup
+def test_signup_existing_user():
+    existing_username = "existing_user"
+    assert existing_username == "existing_user"
+
+pytest -v -m login tests/test_grouping.py -v -s
+pytest -v -m signup tests/test_grouping.py -v -s
+
+3. Define Markers in Pytest.ini File
+
+[pytest]
+markers =
+    development: marks tests as development (deselect with '-m "not development"')
+    production: marks tests as production (deselect with '-m "not production"')
+    fast: marks tests as fast (run with '-m fast')
+    slow: marks tests as slow (run with '-m slow')
+    custom: custom marker example (run with '-m custom')
+    asyncio: marks tests requiring asyncio (run with pytest-asyncio plugin) ( pip install pytest-asyncio )
+    xfail: marks tests that are expected to fail (handled by pytest itself)
+    xpass: marks tests that unexpectedly pass after being marked xfail (handled by pytest itself)
+    parameters: marks parameterized tests (handled by pytest itself)
+    benchmark: marks tests used for benchmarking (handled by pytest-benchmark plugin) (pip install pytest-benchmark)
+    celery: marks tests related to Celery tasks (custom marker, specifics depend on test implementation)
+    login: dummy login marker for grouping test
+    signup: dummy signup marker for grouping test
+    marker1: combined markers
+    marker2: combined markers
+    timeout: test with timeout
+
+III. What Is `pytest.ini` And How To Save Time Using Pytest Config
+refer: https://pytest-with-eric.com/pytest-best-practices/pytest-ini/
+
+Config files help you define how you want each program or unit test to behave on execution.
+Without it, you would need to specify how the test should work every time you run it, often using several CLI commands.
+
+IV. 3 Simple Ways To Ignore Test Directories in Pytest
+refer: https://pytest-with-eric.com/getting-started/pytest-ignore-directory/
+
+1. Using Command-Line Options
+pytest --ignore=tests/in_progress --ignore=tests/upcoming_modules
+pytest --ignore=tests/in_progress/test_in_progress_modules.py
+
+2. Using Configuration Files pytest.ini
+
+[pytest]
+testpaths =
+    tests
+    integration
+addopts = -v 
+
+# Specifying the directory to ignore
+norecursedirs =  tests/in_progress tests/upcoming_modules
+addopts = --ignore=tests/in_progress --ignore=tests/upcoming_modules
+addopts = --ignore=tests/in_progress/test_in_progress_modules.py
+
+3. Using Markers (For Individual Tests)
+To handle individual tests, you can apply markers like @pytest.mark.skip or @pytest.mark.xfail. 
+The @pytest.mark.skip decorator indicates skipping the test, while @pytest.mark.xfail flags a test as expected to fail.
+
+V. How To Stop Test Suite after N Test Failures in Pytest?
+refer to : https://www.lambdatest.com/blog/how-to-stop-test-suite-after-n-test-failures-in-pytest/
+
+1. Option 1
+Particular test (in a class) fails, the subsequent tests are marked as expected to fail (or marked as xfail) in order to skip the test in Python with pytest.
+
+@pytest.mark.incremental
+class Test_Scenario_1:
+   def test_1(self):
+        ...
+   def test_2(self):
+        ...
+   def test_3(self):
+        ...
+
+class Test_Scenario_2:
+   def test_4(self):
+        ... 
+
+Then run : py.test -rx --verbose --capture=no
+
+2. Option 2 
+- Remove @pytest.mark.incremental in test case.py
+Then run : py.test -rx --verbose --capture=no --maxfail=2
+
+VI. https://www.lambdatest.com/learning-hub/selenium-pytest-tutorial
+
+
+
+
+
+
+
+
+
+
