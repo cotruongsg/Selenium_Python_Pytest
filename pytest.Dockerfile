@@ -27,5 +27,5 @@ RUN apt-get update && \
     rm /tmp/chromedriver.zip
 
 # Set the command to run the tests
-CMD ["pytest"]
+CMD ["pytest -v -n 16"]
 
