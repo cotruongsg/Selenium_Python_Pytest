@@ -2,8 +2,16 @@ import pytest
 from selenium import webdriver
 import os
 import time
+import allure
 import pandas as pd
 from openpyxl import load_workbook
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_addoption(parser):
+    # Define the command line options for pytest
+    parser.addoption("--browser", action="store", default="chrome", help="Browser to use for tests (chrome, firefox)")
+    parser.addoption("--executor", action="store", default="local", help="Executor (local, remote, standalone)")
 
 # Get the present working directory (PWD)
 pwd = os.getcwd()
@@ -33,67 +41,61 @@ options.add_experimental_option("prefs", prefs)
 # The conftest.py file acts as a local configuration file
 # In this setup, the driver fixture is scoped to function, meaning that it will be initialized and cleaned up for each test function individually. 
 # This ensures that each test function gets its own fresh instance of the WebDriver, allowing them to run independently of each other.
-@pytest.fixture(params=["chrome"],scope="class")
-def init_driver(request):
-    selenium_hub_url = 'http://localhost:4444/wd/hub'
-    if request.param.lower() == "chrome":
-        # web_driver = webdriver.Chrome(options=options)
-        web_driver = webdriver.Remote(command_executor=selenium_hub_url, options=options)
+# @pytest.fixture(params=["chrome"],scope="class")
+@allure.step("Open Browser")
+@pytest.fixture(scope="class")
+def init_driver(request):    
+    browser = request.config.getoption("--browser").lower()
+    executor = request.config.getoption("--executor").lower()
 
-    if request.param.lower() == "firefox":
-        web_driver = webdriver.Firefox()
+    # Default to Chrome and local executor if options are not specified
+    if executor in ["local", "standalone", ""]:
+        if browser == 'chrome':
+            driver = webdriver.Chrome()
+        else:
+            driver = webdriver.Firefox()
+    else:
+        if executor == "remote":
+            command_executor = 'http://localhost:4444/wd/hub'
+        else:
+            command_executor = f'http://{executor}/wd/hub'  ## Expecting IP and Port. Eg. 1.1.1.1:4444
 
-    request.cls.driver = web_driver   
-    web_driver.maximize_window()  
-    yield web_driver
-    web_driver.quit()
+        # Create desired capabilities based on browser
+        capabilities = {'browserName': browser}
 
-# @pytest.fixture(params=["chrome", "firefox"], scope="class")
-# def init_driver(request):
-#     browser = request.param.lower()
+        driver = webdriver.Remote(
+            command_executor=command_executor,
+            desired_capabilities=capabilities)
 
-#     hub_url = "http://10.0.0.53:4444/wd/hub"  # Replace <hub-ip> with your actual hub IP or hostname
+    request.cls.driver = driver
+    driver.implicitly_wait(10) 
+    driver.maximize_window()  
+    yield driver
+    driver.quit()
 
-#     if browser == "chrome":
-#         chrome_options = webdriver.ChromeOptions()
-#         chrome_options.add_argument("--disable-extensions")
-#         chrome_options.add_argument("--headless")  # Add other Chrome options as needed
+# Allure function
+@pytest.fixture(autouse=True)
+def allure_logs(request, open_browser):
+    driver = open_browser
+    yield driver
+    if request.node.rep_call.failed:
+        # Make the screen-shot if test failed:
+        try:
+            driver.execute_script("document.body.bgColor = 'white';")
+            allure.attach(driver.get_screenshot_as_png(),
+                          name=request.function.__name__,
+                          attachment_type=allure.attachment_type.PNG)
+        except:
+            pass # just ignore
 
-#         capabilities = {
-#             "browserName": "chrome",
-#             "goog:chromeOptions": {
-#                 "args": ["--disable-extensions", "--headless"]
-#             },
-#             "browserVersion": "100",
-#             "platformName": "Windows",
-#             "se:name": "My simple test",
-#             "se:sampleMetadata": "Sample metadata value",
-#         }
-
-#         capabilities.update(chrome_options.to_capabilities())
-
-#         web_driver = webdriver.Remote(command_executor=hub_url, desired_capabilities=capabilities)
-#     elif browser == "firefox":
-#         capabilities = webdriver.DesiredCapabilities.FIREFOX.copy()
-#         web_driver = webdriver.Remote(command_executor=hub_url, desired_capabilities=capabilities)
-#     else:
-#         raise ValueError(f"Unsupported browser: {browser}")
-    
-#     request.cls.driver = web_driver
-#     web_driver.implicitly_wait(5)
-#     web_driver.maximize_window()
-#     web_driver.implicitly_wait(2)
-
-#     yield
-
-#     web_driver.quit()
-
+# Read Excel data
 @pytest.fixture(scope='class')
 def get_excel_data():
     workbook = load_workbook(filename='D:\\SeleniumPOM\\Data\\SearchContents.xlsx')
     sheet = workbook.active
     return sheet
 
+# Skip dependent function if previous function is failed
 def pytest_runtest_makereport(item, call):
     if "incremental" in item.keywords:
         if call.excinfo is not None:
