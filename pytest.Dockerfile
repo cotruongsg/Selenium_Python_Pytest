@@ -24,8 +24,7 @@ RUN apt-get update && \
     CHROMEDRIVER_VERSION=$(wget -q -O - https://chromedriver.storage.googleapis.com/LATEST_RELEASE) && \
     wget -q -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip && \
     unzip /tmp/chromedriver.zip -d /usr/local/bin/ && \
-    rm /tmp/chromedriver.zip
+    # Clean up
+    rm -f /tmp/chromedriver.zip /tmp/chrome.deb
 
-# Set the command to run the tests
-CMD ["pytest -v -n 16"]
 
