@@ -74,19 +74,19 @@ def init_driver(request):
     driver.quit()
 
 # Allure function
-@pytest.fixture(autouse=True)
-def allure_logs(request, open_browser):
-    driver = open_browser
-    yield driver
-    if request.node.rep_call.failed:
-        # Make the screen-shot if test failed:
-        try:
-            driver.execute_script("document.body.bgColor = 'white';")
-            allure.attach(driver.get_screenshot_as_png(),
-                          name=request.function.__name__,
-                          attachment_type=allure.attachment_type.PNG)
-        except:
-            pass # just ignore
+# @pytest.fixture(autouse=True)
+# def allure_logs(request, open_browser):
+#     driver = open_browser
+#     yield driver
+#     if request.node.rep_call.failed:
+#         # Make the screen-shot if test failed:
+#         try:
+#             driver.execute_script("document.body.bgColor = 'white';")
+#             allure.attach(driver.get_screenshot_as_png(),
+#                           name=request.function.__name__,
+#                           attachment_type=allure.attachment_type.PNG)
+#         except:
+#             pass # just ignore
 
 # Read Excel data
 @pytest.fixture(scope='class')
