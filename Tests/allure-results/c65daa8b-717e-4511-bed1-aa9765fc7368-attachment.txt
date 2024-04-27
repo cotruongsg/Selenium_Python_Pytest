@@ -1,3 +1,0 @@
-name: user1 https://the-internet.herokuapp.com/users/1
-name: user2 https://the-internet.herokuapp.com/users/2
-name: user3 https://the-internet.herokuapp.com/users/3

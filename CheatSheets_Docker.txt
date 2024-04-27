@@ -22,7 +22,7 @@ so in total we have 16 chrome browsers up and running and we can take leverage a
 
 *To Stop and remove containers, networks, volumes, and images created by docker compose up we can use the following command:
 
-docker compose -f docker-compose-v3.yml down
+docker-compose -f docker-compose-v3.yml down
 
 4. Step 4 
 

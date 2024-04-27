@@ -1,1 +1,0 @@
-Checkbox 1 is checked and Checkbox 2 is not checked.
