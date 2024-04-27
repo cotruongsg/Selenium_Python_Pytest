@@ -1,0 +1,56 @@
+# The script for downloading code from github repositories
+
+cd %WORKSPACE%
+git config --global --add safe.directory %WORKSPACE%
+
+
+@echo off
+setlocal
+
+REM Log file for tracking Docker Compose output
+set DOCKER_LOG="docker-compose.log"
+
+REM Step 1: Install Python dependencies from requirements.txt
+echo Installing Python dependencies...
+pip install -r requirements.txt >> %DOCKER_LOG% 2>&1
+if errorlevel 1 (
+    echo Error installing Python dependencies. Exiting... >> %DOCKER_LOG%
+    exit /b 1
+)
+
+REM Step 2: Start Selenium Grid with Docker Compose and scale Chrome
+echo Starting Selenium Grid... >> %DOCKER_LOG%
+docker-compose -f docker-compose.yml up -d --scale chrome=4 >> %DOCKER_LOG% 2>&1
+if errorlevel 1 (
+    echo Error starting Selenium Grid. Exiting... >> %DOCKER_LOG%
+    exit /b 1
+)
+
+REM Step 3: Wait until all Docker Compose services are up
+echo Waiting for all services to be fully operational... >> %DOCKER_LOG%
+:waitloop
+docker-compose -f docker-compose.yml ps | find "Up" >> %DOCKER_LOG% 2>&1
+if errorlevel 1 (
+    REM If services aren't up yet, wait for a bit and check again
+    timeout /t 5 /nobreak >> %DOCKER_LOG%
+    goto waitloop
+)
+
+REM Step 4: Run pytest with verbosity and parallel execution, storing Allure results
+echo Running pytest... >> %DOCKER_LOG%
+pytest -v -n 8 --alluredir=allure-results >> %DOCKER_LOG% 2>&1
+if errorlevel 1 (
+    echo Pytest encountered errors. Stopping Selenium Grid and exiting... >> %DOCKER_LOG%
+    docker-compose -f docker-compose.yml down >> %DOCKER_LOG% 2>&1
+    exit /b 1
+)
+
+REM Step 5: Stop Selenium Grid
+echo Stopping Selenium Grid... >> %DOCKER_LOG%
+docker-compose -f docker-compose.yml down >> %DOCKER_LOG% 2>&1
+if errorlevel 1 (
+    echo Error stopping Selenium Grid. Manual intervention may be required. >> %DOCKER_LOG%
+)
+
+echo Build process complete. >> %DOCKER_LOG%
+endlocal

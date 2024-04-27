@@ -20,7 +20,8 @@ class Test_Drag_Drop(BaseTest):
         source_element = driver.find_element(By.ID,"column-a")
         target_element = driver.find_element(By.ID,"column-b")
         action = ActionChains(driver)
-        action.drag_and_drop(source_element,target_element).perform()
+        # action.drag_and_drop(source_element,target_element).perform()
+        action.click_and_hold(source_element).move_to_element(target_element).release().perform()
         sleep(5)
         new_target_element = driver.find_element(By.TAG_NAME,"header").text
         self.Assertion.assertEqual(new_target_element,'A','Drag and Drop is not supported')
