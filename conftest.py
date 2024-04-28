@@ -5,6 +5,8 @@ import time
 import allure
 import pandas as pd
 from openpyxl import load_workbook
+from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
 
 
 @pytest.hookimpl(tryfirst=True)
@@ -48,24 +50,22 @@ def init_driver(request):
     browser = request.config.getoption("--browser").lower()
     executor = request.config.getoption("--executor").lower()
 
-    # Default to Chrome and local executor if options are not specified
     if executor in ["local", "standalone", ""]:
         if browser == 'chrome':
-            driver = webdriver.Chrome()
+            chrome_options = ChromeOptions()
+            driver = webdriver.Chrome(options=chrome_options)
         else:
-            driver = webdriver.Firefox()
+            firefox_options = FirefoxOptions()
+            driver = webdriver.Firefox(options=firefox_options)
     else:
-        if executor == "remote":
-            command_executor = 'http://localhost:4444/wd/hub'
+        command_executor = 'http://localhost:4444/wd/hub' if executor == "remote" else f'http://{executor}/wd/hub'
+
+        if browser == 'chrome':
+            chrome_options = ChromeOptions()
+            driver = webdriver.Remote(command_executor=command_executor, options=chrome_options)
         else:
-            command_executor = f'http://{executor}/wd/hub'  ## Expecting IP and Port. Eg. 1.1.1.1:4444
-
-        # Create desired capabilities based on browser
-        capabilities = {'browserName': browser}
-
-        driver = webdriver.Remote(
-            command_executor=command_executor,
-            desired_capabilities=capabilities)
+            firefox_options = FirefoxOptions()
+            driver = webdriver.Remote(command_executor=command_executor, options=firefox_options)
 
     request.cls.driver = driver
     driver.implicitly_wait(10) 

@@ -1,0 +1,19 @@
+I. Run with local machine with multiple browsers and report results
+
+1. cd to Tests folder
+2. pytest -v -s -n 16 
+3. cd to root folder of project
+4. allure serve allure-results
+
+II. Run with Selenium Hub with multiple browsers and report results
+
+1. cd to Tests folder
+2. docker-compose -f docker-compose.yml up --scale chrome=4 --scale firefox=4
+2. pytest -v -s -n 16 --browser=chrome --executor=remote
+3. cd to root folder of project
+4. allure serve allure-results
+
+
+
+
+
