@@ -28,6 +28,7 @@ class Test_Download(BaseTest):
         file_uploaded = driver.find_element(By.ID,'uploaded-files')
         self.soft_asserts.assert_true(confirmation.text == 'File Uploaded!' and file_uploaded.text == 'test.txt','File did not upload successfully')
         self.soft_asserts.assert_all()
+       
 
 
 
